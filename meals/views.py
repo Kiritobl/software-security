@@ -13,13 +13,7 @@ def index(request):
     else:
         #修改索引超出问题
         most_likes_meal = Meal.objects.order_by("-likes")[:3]  # 获取点赞数最多的前三个菜品
-        content = {'meal1': None, 'meal2': None, 'meal3': None}
-        if most_likes_meal:
-            content['meal1'] = most_likes_meal[0]
-        if len(most_likes_meal) > 1:
-            content['meal2'] = most_likes_meal[1]
-        if len(most_likes_meal) > 2:
-            content['meal3'] = most_likes_meal[2]
+        content = {'meal1': most_likes_meal[0], 'meal2': most_likes_meal[2], 'meal3': most_likes_meal[3]}
         return render(request, 'meals/index.html', content)
 
 
