@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from meals.models import *
-from django.urls import reverse
 from meals.forms import *
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect
+import django.contrib.auth.models as dj_model
 
 
 # 首页 （包含搜索功能）
@@ -199,51 +202,19 @@ def collect_meal(request, meal_id):
     return redirect('meals:detail', meal_id=meal_id)
 
 
-# 登录页面，已完成
-def login(request):
-    if request.session.get('is_login', None):  # 不允许重复登录
-        return redirect('/meals/index/')
-    if request.method == 'POST':
-        login_form = UserLoginForm(request.POST)
-        message = '亲，好像内容不太对哦~'
-        if login_form.is_valid():
-            username = login_form.cleaned_data.get('user_name')
-            password = login_form.cleaned_data.get('password')
-            try:
-                user = User.objects.get(user_name=username)
-            except:
-                message = '亲，小生没有查到您的账户哦(⊙o⊙)'
-                return render(request, 'meals/login.html', locals())
-
-            if user.password == password:
-                request.session['is_login'] = True
-                request.session['user_id'] = user.id
-                request.session['user_name'] = user.user_name
-                return redirect('/meals/index/')
-            else:
-                message = '亲，密码好像不对哦~'
-                return render(request, 'meals/login.html', locals())
-        else:
-            return render(request, 'meals/login.html', locals())
-    login_form = UserLoginForm()
-
-    return render(request, 'meals/login.html', locals())
-
-
 # 账户注册页面,已完成
 def register(request):
     if request.session.get('is_login', None):
         return redirect('/meals/index/')
 
     if request.method == 'POST':
-        register_form = RegisterForm(request.POST)
+        register_form = UserCreationForm(request.POST)
         message = "请检查填写的内容！"
         if register_form.is_valid():
-            user_name = register_form.cleaned_data.get('user_name')
+            user_name = register_form.cleaned_data.get('username')
             password1 = register_form.cleaned_data.get('password1')
             password2 = register_form.cleaned_data.get('password2')
-            # email = register_form.cleaned_data.get('email')
-            # telephone = register_form.cleaned_data.get('telephone')
+            print("hahah")
 
             if password1 != password2:
                 message = '两次输入的密码不同！'
@@ -253,17 +224,21 @@ def register(request):
                 if same_name_user:
                     message = '该用户名已经存在'
                     return render(request, 'meals/register.html', locals())
-
-                User.objects.create(user_name=user_name, password=password1)
-                return redirect('/meals/login/')
+                if register_form.is_valid():
+                    user = register_form.save()
+                    print("yes yes yes")
+                    #User类不储存明文密码
+                    User.objects.create(user_name=user_name, password="******")
+                    return redirect('/meals/login/')
+                return render(request, 'meals/register.html', locals())
         else:
             return render(request, 'meals/register.html', locals())
-    register_form = RegisterForm()
+    register_form = UserCreationForm()
     return render(request, 'meals/register.html', locals())
 
 
 # 退出登录，已完成
-def logout(request):
+def user_logout(request):
     if not request.session.get('is_login', None):  # 如果本来就未登录，也就没有登出一说
         return redirect("/meals/login/")
     request.session.flush()
